@@ -1,0 +1,8 @@
+# Python environment & cache
+__pycache__/
+*.pyc
+.env
+venv/
+
+# Local databases (optional: keep dummy leadme.db if you want others to test it)
+# data/leadme.db

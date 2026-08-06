@@ -1,0 +1,5 @@
+lead_id,first_name,last_name,email,phone,lead_created_at,ticket_id,status,channel,subject,ticket_created_at
+1,Alice,Smith,alice@example.com,+1234567890,2026-08-06 08:34:46,1.0,Open,Web Chat,Pricing Inquiry,2026-08-06 08:34:46
+1,Alice,Smith,alice@example.com,+1234567890,2026-08-06 08:34:46,3.0,Pending,Web Chat,Technical Support,2026-08-06 08:34:46
+2,Bob,Jones,bob@example.com,+1987654321,2026-08-06 08:34:46,2.0,Closed,WhatsApp,Product Demo Request,2026-08-06 08:34:46
+3,Charlie,Brown,charlie@example.com,+1122334455,2026-08-06 08:34:46,,No Ticket,Unknown,No Subject,
