@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from sqlalchemy import create_engine
 
 # 1. Page Configuration
 st.set_page_config(page_title="LeadMe Intelligence Hub", layout="wide")
@@ -8,13 +9,49 @@ st.set_page_config(page_title="LeadMe Intelligence Hub", layout="wide")
 # Modern dark theme for plotly charts
 PLOTLY_TEMPLATE = "plotly_dark"
 
-@st.cache_data
+@st.cache_data(ttl=600)
 def load_data():
-    """Load and preprocess the master dataset."""
-    df = pd.read_csv("data/analytics/leadme_master_dataset.csv")
+    """Load data from PostgreSQL and apply ETL transformations."""
+    # Retrieve the database URL from Streamlit's secret manager
+    db_url = st.secrets["DATABASE_URL"]
     
-    # Convert timestamp
-    df['lead_created_at'] = pd.to_datetime(df['lead_created_at'])
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+    engine = create_engine(db_url)
+    
+    # Extraction
+    leads_df = pd.read_sql("SELECT * FROM leads", engine)
+    tickets_df = pd.read_sql("SELECT * FROM tickets", engine)
+    
+    # Date Formatting
+    if 'created_at' in leads_df.columns:
+        leads_df['created_at'] = pd.to_datetime(leads_df['created_at'])
+    if 'created_at' in tickets_df.columns:
+        tickets_df['created_at'] = pd.to_datetime(tickets_df['created_at'])
+        
+    # Table Merging (LEFT JOIN)
+    df = pd.merge(
+        leads_df, 
+        tickets_df, 
+        on='lead_id', 
+        how='left', 
+        suffixes=('_lead', '_ticket')
+    )
+    
+    # Rename overlapping columns to match chart expectations
+    df = df.rename(columns={
+        'created_at_lead': 'lead_created_at',
+        'created_at_ticket': 'ticket_created_at'
+    })
+    
+    # Null Handling
+    if 'status' in df.columns:
+        df['status'] = df['status'].fillna('No Ticket')
+    if 'channel' in df.columns:
+        df['channel'] = df['channel'].fillna('Unknown')
+    if 'subject' in df.columns:
+        df['subject'] = df['subject'].fillna('No Subject')
     
     # Extract necessary derived columns
     df['Query Hour'] = df['lead_created_at'].dt.hour
@@ -25,8 +62,8 @@ def load_data():
 # Load the data
 try:
     df = load_data()
-except FileNotFoundError:
-    st.error("Data file not found. Please ensure the ETL pipeline has been run and data/analytics/leadme_master_dataset.csv exists.")
+except Exception as e:
+    st.error(f"Failed to load data from database: {e}")
     st.stop()
 
 # Header
