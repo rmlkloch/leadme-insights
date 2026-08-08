@@ -9,7 +9,7 @@ st.set_page_config(page_title="LeadMe Intelligence Hub", layout="wide")
 # Modern dark theme for plotly charts
 PLOTLY_TEMPLATE = "plotly_dark"
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=5)
 def load_data():
     """Load data from PostgreSQL and apply ETL transformations."""
     # Retrieve the database URL from Streamlit's secret manager
@@ -23,12 +23,19 @@ def load_data():
     # Extraction
     try:
         leads_df = pd.read_sql("SELECT * FROM leads", engine)
+    except Exception:
+        leads_df = pd.DataFrame()
+        
+    try:
         tickets_df = pd.read_sql("SELECT * FROM tickets", engine)
     except Exception:
+        tickets_df = pd.DataFrame()
+        
+    if leads_df.empty or 'lead_id' not in leads_df.columns:
         return pd.DataFrame()
         
-    if leads_df.empty:
-        return pd.DataFrame()
+    if 'lead_id' not in tickets_df.columns:
+        tickets_df = pd.DataFrame(columns=['lead_id'])
     
     # Date Formatting
     if 'created_at' in leads_df.columns:
@@ -121,7 +128,7 @@ with col_mid1:
         labels={'lead_id': 'Total Leads', 'Query Hour': 'Hour of Day'}, 
         template=PLOTLY_TEMPLATE
     )
-    st.plotly_chart(fig_hour, use_container_width=True, theme=None)
+    st.plotly_chart(fig_hour, width="stretch")
 
 with col_mid2:
     st.subheader("Channel Performance")
@@ -133,7 +140,7 @@ with col_mid2:
         hole=0.4, 
         template=PLOTLY_TEMPLATE
     )
-    st.plotly_chart(fig_channel, use_container_width=True, theme=None)
+    st.plotly_chart(fig_channel, width="stretch")
 
 with col_mid3:
     st.subheader("Traffic by Day of Week")
@@ -150,7 +157,7 @@ with col_mid3:
         labels={'lead_id': 'Total Leads', 'Day of Week': 'Day'}, 
         template=PLOTLY_TEMPLATE
     )
-    st.plotly_chart(fig_day, use_container_width=True, theme=None)
+    st.plotly_chart(fig_day, width="stretch")
 
 st.markdown("<hr/>", unsafe_allow_html=True)
 
@@ -173,7 +180,7 @@ with col_bot1:
         labels={'ticket_id': 'Ticket Count', 'subject': 'Subject'}, 
         template=PLOTLY_TEMPLATE
     )
-    st.plotly_chart(fig_gaps, use_container_width=True, theme=None)
+    st.plotly_chart(fig_gaps, width="stretch")
 
 with col_bot2:
     st.subheader("The Engagement Funnel")
@@ -187,5 +194,5 @@ with col_bot2:
         y='stage', 
         template=PLOTLY_TEMPLATE
     )
-    st.plotly_chart(fig_funnel, use_container_width=True, theme=None)
+    st.plotly_chart(fig_funnel, width="stretch")
 
